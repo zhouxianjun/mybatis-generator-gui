@@ -6,6 +6,7 @@ import com.zzg.mybatis.generator.model.GeneratorConfig;
 import com.zzg.mybatis.generator.plugins.DbRemarksCommentGenerator;
 import com.zzg.mybatis.generator.util.ConfigHelper;
 import com.zzg.mybatis.generator.util.DbUtil;
+import com.zzg.mybatis.generator.util.MyStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mybatis.generator.api.MyBatisGenerator;
 import org.mybatis.generator.api.ProgressCallback;
@@ -15,10 +16,7 @@ import org.mybatis.generator.internal.DefaultShellCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The bridge between GUI and the mybatis generator. All the operation to  mybatis generator should proceed through this
@@ -52,6 +50,10 @@ public class MybatisGeneratorBridge {
     }
 
     public void generate() throws Exception {
+        generate(null);
+    }
+
+    public void generate(List<String> tables) throws Exception {
         Configuration configuration = new Configuration();
         Context context = new Context(ModelType.CONDITIONAL);
         configuration.addContext(context);
@@ -60,36 +62,51 @@ public class MybatisGeneratorBridge {
 	    _LOG.info("connectorLibPath: {}", connectorLibPath);
 	    configuration.addClasspathEntry(connectorLibPath);
         // Table configuration
-        TableConfiguration tableConfig = new TableConfiguration(context);
-        tableConfig.setTableName(generatorConfig.getTableName());
-        tableConfig.setDomainObjectName(generatorConfig.getDomainObjectName());
+        if (tables == null || tables.isEmpty()) {
+            tables = Collections.singletonList(generatorConfig.getTableName());
+        }
+        context.addProperty("beginningDelimiter", "`");
+        context.addProperty("endingDelimiter", "`");
+        context.addProperty("autoDelimitKeywords", "true");
+        for (String table : tables) {
+            TableConfiguration tableConfig = new TableConfiguration(context);
+            tableConfig.setTableName(table);
+            tableConfig.setDomainObjectName(MyStringUtils.dbStringToCamelStyle(table));
+            tableConfig.setCountByExampleStatementEnabled(generatorConfig.isUseExampleCheckBox());
+            tableConfig.setUpdateByExampleStatementEnabled(generatorConfig.isUseExampleCheckBox());
+            tableConfig.setDeleteByExampleStatementEnabled(generatorConfig.isUseExampleCheckBox());
+            tableConfig.setSelectByExampleStatementEnabled(generatorConfig.isUseExampleCheckBox());
+            tableConfig.setAllColumnDelimitingEnabled(true);
 
-        // 针对 postgresql 单独配置
-        if (DbType.valueOf(selectedDatabaseConfig.getDbType()).getDriverClass() == "org.postgresql.Driver") {
-            tableConfig.setDelimitIdentifiers(true);
-        }
 
-        //添加GeneratedKey主键生成
-		if (StringUtils.isNoneEmpty(generatorConfig.getGenerateKeys())) {
-			tableConfig.setGeneratedKey(new GeneratedKey(generatorConfig.getGenerateKeys(), selectedDatabaseConfig.getDbType(), true, null));
-		}
+            // 针对 postgresql 单独配置
+            if (DbType.valueOf(selectedDatabaseConfig.getDbType()).getDriverClass() == "org.postgresql.Driver") {
+                tableConfig.setDelimitIdentifiers(true);
+            }
 
-        if (generatorConfig.getMapperName() != null) {
-            tableConfig.setMapperName(generatorConfig.getMapperName());
-        }
-        // add ignore columns
-        if (ignoredColumns != null) {
-            ignoredColumns.stream().forEach(ignoredColumn -> {
-                tableConfig.addIgnoredColumn(ignoredColumn);
-            });
-        }
-        if (columnOverrides != null) {
-            columnOverrides.stream().forEach(columnOverride -> {
-                tableConfig.addColumnOverride(columnOverride);
-            });
-        }
-        if (generatorConfig.isUseActualColumnNames()) {
-			tableConfig.addProperty("useActualColumnNames", "true");
+            //添加GeneratedKey主键生成
+            if (StringUtils.isNoneEmpty(generatorConfig.getGenerateKeys())) {
+                tableConfig.setGeneratedKey(new GeneratedKey(generatorConfig.getGenerateKeys(), selectedDatabaseConfig.getDbType(), true, null));
+            }
+
+            if (generatorConfig.getMapperName() != null) {
+                tableConfig.setMapperName(generatorConfig.getMapperName());
+            }
+            // add ignore columns
+            if (ignoredColumns != null) {
+                ignoredColumns.stream().forEach(ignoredColumn -> {
+                    tableConfig.addIgnoredColumn(ignoredColumn);
+                });
+            }
+            if (columnOverrides != null) {
+                columnOverrides.stream().forEach(columnOverride -> {
+                    tableConfig.addColumnOverride(columnOverride);
+                });
+            }
+            if (generatorConfig.isUseActualColumnNames()) {
+                tableConfig.addProperty("useActualColumnNames", "true");
+            }
+            context.addTableConfiguration(tableConfig);
         }
         JDBCConnectionConfiguration jdbcConfig = new JDBCConnectionConfiguration();
         jdbcConfig.setDriverClass(DbType.valueOf(selectedDatabaseConfig.getDbType()).getDriverClass());
@@ -111,7 +128,6 @@ public class MybatisGeneratorBridge {
         daoConfig.setTargetProject(generatorConfig.getProjectFolder() + "/" + generatorConfig.getDaoTargetFolder());
 
         context.setId("myid");
-        context.addTableConfiguration(tableConfig);
         context.setJdbcConnectionConfiguration(jdbcConfig);
         context.setJdbcConnectionConfiguration(jdbcConfig);
         context.setJavaModelGeneratorConfiguration(modelConfig);

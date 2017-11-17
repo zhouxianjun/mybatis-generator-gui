@@ -46,6 +46,10 @@ public class GeneratorConfig {
 
 	private boolean useActualColumnNames;
 
+	private boolean useExampleCheckBox;
+
+	private boolean allTable;
+
 	private String generateKeys;
 
 	public String getName() {
@@ -190,5 +194,21 @@ public class GeneratorConfig {
 
 	public void setGenerateKeys(String generateKeys) {
 		this.generateKeys = generateKeys;
+	}
+
+	public boolean isUseExampleCheckBox() {
+		return useExampleCheckBox;
+	}
+
+	public void setUseExampleCheckBox(boolean useExampleCheckBox) {
+		this.useExampleCheckBox = useExampleCheckBox;
+	}
+
+	public boolean isAllTable() {
+		return allTable;
+	}
+
+	public void setAllTable(boolean allTable) {
+		this.allTable = allTable;
 	}
 }

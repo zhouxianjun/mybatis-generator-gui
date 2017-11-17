@@ -77,6 +77,10 @@ public class MainUIController extends BaseFXController {
     @FXML
     private CheckBox useActualColumnNamesCheckbox;
     @FXML
+    private CheckBox useExampleCheckBox;
+    @FXML
+    private CheckBox allTable;
+    @FXML
     private TreeView<String> leftDBTree;
     // Current selected databaseConfig
     private DatabaseConfig selectedDatabaseConfig;
@@ -86,6 +90,8 @@ public class MainUIController extends BaseFXController {
     private List<IgnoredColumn> ignoredColumns;
 
     private List<ColumnOverride> columnOverrides;
+
+    private List<String> tables = new ArrayList<>();
 
 
 
@@ -147,10 +153,11 @@ public class MainUIController extends BaseFXController {
                 if (event.getClickCount() == 2) {
                     treeItem.setExpanded(true);
                     if (level == 1) {
+                        tables.clear();
                         System.out.println("index: " + leftDBTree.getSelectionModel().getSelectedIndex());
                         DatabaseConfig selectedConfig = (DatabaseConfig) treeItem.getGraphic().getUserData();
                         try {
-                            List<String> tables = DbUtil.getTableNames(selectedConfig);
+                            tables = DbUtil.getTableNames(selectedConfig);
                             if (tables != null && tables.size() > 0) {
                                 ObservableList<TreeItem<String>> children = cell.getTreeItem().getChildren();
                                 children.clear();
@@ -240,7 +247,7 @@ public class MainUIController extends BaseFXController {
 		bridge.setProgressCallback(alert);
 		alert.show();
 		try {
-            bridge.generate();
+            bridge.generate(generatorConfig.isAllTable() ? tables : null);
         } catch (Exception e) {
 			e.printStackTrace();
             AlertUtil.showErrorAlert(e.getMessage());
@@ -303,6 +310,8 @@ public class MainUIController extends BaseFXController {
         generatorConfig.setNeedToStringHashcodeEquals(needToStringHashcodeEquals.isSelected());
         generatorConfig.setAnnotation(annotationCheckBox.isSelected());
         generatorConfig.setUseActualColumnNames(useActualColumnNamesCheckbox.isSelected());
+        generatorConfig.setUseExampleCheckBox(useExampleCheckBox.isSelected());
+        generatorConfig.setAllTable(allTable.isSelected());
         return generatorConfig;
     }
 

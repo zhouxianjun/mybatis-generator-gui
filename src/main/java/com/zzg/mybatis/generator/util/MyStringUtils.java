@@ -15,6 +15,7 @@ public class MyStringUtils {
     public static String dbStringToCamelStyle(String str) {
         if (str != null) {
             StringBuilder sb = new StringBuilder();
+            if (str.startsWith("t_")) str = str.substring(2);
             sb.append(String.valueOf(str.charAt(0)).toUpperCase());
             for (int i = 1; i < str.length(); i++) {
                 char c = str.charAt(i);
